@@ -68,6 +68,9 @@ static NSString *const kCompletedCallbackKey = @"completed";
         _shouldDecompressImages = YES;
         _executionOrder = SDWebImageDownloaderFIFOExecutionOrder;
         _downloadQueue = [NSOperationQueue new];
+      [_downloadQueue addObserver:self forKeyPath:@"operationCount" options:NSKeyValueObservingOptionNew context:NULL];
+      
+      
         _downloadQueue.maxConcurrentOperationCount = 6;
         _URLCallbacks = [NSMutableDictionary new];
 #ifdef SD_WEBP
@@ -312,6 +315,15 @@ didReceiveResponse:(NSURLResponse *)response
     SDWebImageDownloaderOperation *dataOperation = [self operationWithTask:task];
 
     [dataOperation URLSession:session task:task didReceiveChallenge:challenge completionHandler:completionHandler];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
+  
+  if (object && [keyPath isEqualToString: @"operationCount"] && [[object valueForKeyPath:@"operationCount"] integerValue] == 0) {
+    if (self.operationFinishCallback) {
+        self.operationFinishCallback();
+    }
+  }
 }
 
 @end
